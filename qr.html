@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>QR Generator</title>
+<script>
+// ✅ Page Protection (redirect if not logged in)
+if(localStorage.getItem("auth") !== "1"){
+  window.location.href="index.html";
+}
+</script>
+<style>
+/* SAME CSS AS BEFORE */
+:root{--bg:#0f1724;--card:linear-gradient(180deg,#071020 0%, #0b1624 100%);--accent:#6ee7b7;--muted:#94a3b8;}
+html,body{height:100%;margin:0;font-family:Inter; background:var(--bg);color:#e6eef6}
+.wrap{max-width:1200px;margin:28px auto;padding:20px;display:grid;grid-template-columns:430px 1fr;gap:20px;align-items:start}
+.panel{background:var(--card);border-radius:14px;padding:20px;box-shadow:0 8px 30px rgba(2,6,23,0.6);min-height:520px}
+input{width:100%;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.08);background:transparent;color:inherit}
+.btn{padding:10px 14px;border-radius:10px;border:0;cursor:pointer;font-weight:700}
+.btn.primary{background:#06b6d4}
+.logout{position:absolute;top:20px;right:20px;background:#ff4757;padding:8px 12px;border-radius:8px;cursor:pointer}
+#limitBox{font-size:12px;color:var(--muted);margin-top:4px}
+</style>
+</head>
+<body>
+
+<button class="logout" onclick="logout()">Logout</button>
+
+<div id="limitBox"></div>
+
+<!-- ✅ UI + QR Generator Content from previous answer -->
+<div class="wrap">
+  <!-- LEFT PANEL -->
+  <div class="panel">
+      <h1>UPI QR Generator</h1>
+      <label>UPI ID</label>
+      <input id="upiId" type="text">
+      <label>Name</label>
+      <input id="upiName" type="text">
+      <label>Note</label>
+      <input id="upiNote" type="text">
+      <label>Amount</label>
+      <input id="upiAmount" type="number">
+
+      <div style="margin-top:12px">
+        <button id="generateBtn" class="btn primary">Generate</button>
+        <button id="copyPayload" class="btn">Copy UPI Link</button>
+      </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="panel" style="display:flex;justify-content:center;align-items:center">
+    <img id="qrShow" style="display:none;width:250px;height:250px">
+    <div id="qrPlaceholder">Generate QR Here</div>
+  </div>
+</div>
+
+<canvas id="qrCanvas" width="512" height="512" style="display:none"></canvas>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+
+<script>
+document.getElementById("limitBox").innerText =
+  "Remaining Limit: " + localStorage.getItem("limit");
+
+// ✅ Logout
+function logout(){
+  localStorage.clear();
+  window.location.href="index.html";
+}
+
+// ✅ QR Generator Logic (simple)
+const canvas=document.getElementById("qrCanvas");
+const ctx=canvas.getContext("2d");
+let qr=new QRious({ element:canvas, size:512, level:"H" });
+
+generateBtn.onclick=()=>{
+  let vpa=upiId.value.trim();
+  if(!vpa) return alert("Enter UPI ID");
+
+  let params = new URLSearchParams();
+  params.set("pa",vpa);
+  params.set("pn",upiName.value);
+  params.set("tn",upiNote.value);
+  params.set("am",upiAmount.value);
+  params.set("cu","INR");
+
+  let payload = "upi://pay?" + params.toString();
+  qr.value = payload;
+
+  qrPlaceholder.style.display="none";
+  qrShow.style.display="block";
+  qrShow.src = canvas.toDataURL("image/png");
+
+  canvas.toBlob((b)=>{
+    let a=document.createElement("a");
+    a.href=URL.createObjectURL(b);
+    a.download="QR.png";
+    a.click();
+  });
+};
+
+copyPayload.onclick=()=>{
+  navigator.clipboard.writeText(qr.value);
+  alert("Copied UPI Link!");
+};
+</script>
+
+</body>
+</html>
